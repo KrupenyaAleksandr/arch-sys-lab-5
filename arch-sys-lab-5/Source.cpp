@@ -35,17 +35,24 @@ void printArray(int* array, int size) {
 	std::cout << std::endl;
 }
 
-void randomArray(int* array, int size) {
+template <typename T>
+void randomArray(T* array, int size) {
 	for (int i = 0; i < size; ++i)
 		array[i] = rand() % 10000000;
 }
 
-bool isSorted(int* array, int size) {
+template <typename T>
+void randomVec(std::vector<T>& vec, int size) {
+	for (int i = 0; i < size; ++i)
+		vec.push_back(rand() % 1000);
+}
+
+void isSorted(int* array, int size) {
 	for (int i = 0; i < size - 1; ++i) {
-		if (array[i] > array[i + 1]) 
-			return false;
+		if (array[i] > array[i + 1])
+			std::cout << "Not sorted";
 	}
-	return true;
+	std::cout << "Sorted";
 }
 
 void copyArray(int* srcArray, int* dstArray, int size) {
@@ -117,34 +124,29 @@ void mergeSortRegular(int* srcArray, int n, int* dstArray) {
 	mergeFusion(srcArray, n, dstArray);
 }
 
-void task2() {
-	long int size = 10000000;
+void task2(long int size) {
 	int* srcArray = new int[size];
 	randomArray(srcArray, size);
 	int* dstArray = new int[size];
+
 	auto timer1 = omp_get_wtime();
 	mergeSortRegular(srcArray, size, dstArray);
 	std::cout << omp_get_wtime() - timer1 << std::endl;
 
 	delete[] dstArray;
-
 	dstArray = new int[size];
+
 	timer1 = omp_get_wtime();
-	#pragma omp parallel
-	{
-		#pragma omp single
-		{
-			mergeSortParallel(srcArray, size, dstArray);
-		}
-	}
+	mergeSortParallel(srcArray, size, dstArray);
 	std::cout << omp_get_wtime() - timer1 << std::endl;
 
 	delete[] dstArray;
-
 	dstArray = new int[size];
+
 	timer1 = omp_get_wtime();
 	omp_set_nested(1);
 	mergeSortParallelNested(srcArray, size, dstArray);
+	omp_set_nested(0);
 	std::cout << omp_get_wtime() - timer1 << std::endl;
 }
 
@@ -203,37 +205,47 @@ void quickSortParallelNested(int* array, int start, int end) {
 	quickSortParallelNested(array, supElem + 1, end);
 }
 
-void task3() {
-	int size = 3000;
+void task3(long int size) {
 	int* srcArray = new int[size];
 	randomArray(srcArray, size);
 	int* dstArray = new int[size];
 	copyArray(srcArray, dstArray, size);
 
+	auto timer1 = omp_get_wtime();
 	quickSortRegular(dstArray, 0, size - 1);
-	//std::cout << std::endl << isSorted(dstArray, size);
-	std::cout << std::endl;
+	std::cout << omp_get_wtime() - timer1 << std::endl;
 
 	delete[] dstArray;
 	dstArray = new int[size];
 	copyArray(srcArray, dstArray, size);
 
+	timer1 = omp_get_wtime();
 	quickSortParallel(dstArray, 0, size - 1);
-	//std::cout << std::endl << isSorted(dstArray, size);
+	std::cout << omp_get_wtime() - timer1 << std::endl;
 
+	delete[] dstArray;
+	dstArray = new int[size];
+	copyArray(srcArray, dstArray, size);
+
+	timer1 = omp_get_wtime();
 	omp_set_nested(1);
+	quickSortParallelNested(dstArray, 0, size - 1);
+	omp_set_nested(0);
+	std::cout << omp_get_wtime() - timer1 << std::endl;
 }
 
 #ifdef _OPENMP
 int main() {
 	setlocale(LC_ALL, "");
 	srand(time(NULL));
-	std::vector<double> vec1 = { 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30};
-	std::vector<int> vec2 = { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29 };
-	//task1(vec1, vec2);
 
-	//task2();
-	task3();
+	std::vector<double> vec1;
+	randomVec(vec1, 10000);
+	std::vector<int> vec2;
+	randomVec(vec2, 10000);
+	task1(vec1, vec2);
+	task2(1000000);
+	task3(1000000);
 	return 1;
 }
 #endif
