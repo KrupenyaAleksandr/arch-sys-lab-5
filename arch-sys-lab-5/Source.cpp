@@ -25,7 +25,8 @@ void task1(std::vector <T1> vec1, std::vector <T2> vec2) {
 			}
 		}
 	}
-	std::cout << sum << " " << omp_get_wtime() - timer1 << std::endl;
+	std::cout << "Сложение двух векторов, количество элементов - " << count << std::endl;
+	std::cout << "Сумма: " << sum << ", время: " << omp_get_wtime() - timer1 << "\n\n";
 }
 
 void printArray(int* array, int size) {
@@ -128,17 +129,20 @@ void task2(long int size) {
 	int* srcArray = new int[size];
 	randomArray(srcArray, size);
 	int* dstArray = new int[size];
+	std::cout << "Сортировка слиянием, количество элементов - " << size << std::endl;
 
 	auto timer1 = omp_get_wtime();
 	mergeSortRegular(srcArray, size, dstArray);
-	std::cout << omp_get_wtime() - timer1 << std::endl;
+	std::cout << "Обычная сортировка слияниями" << std::endl;
+	std::cout << "Время: " << omp_get_wtime() - timer1 << std::endl;
 
 	delete[] dstArray;
 	dstArray = new int[size];
 
 	timer1 = omp_get_wtime();
 	mergeSortParallel(srcArray, size, dstArray);
-	std::cout << omp_get_wtime() - timer1 << std::endl;
+	std::cout << "Параллельная сортировка слияниями без вложенного параллелизма" << std::endl;
+	std::cout << "Время: " << omp_get_wtime() - timer1 << std::endl;
 
 	delete[] dstArray;
 	dstArray = new int[size];
@@ -147,7 +151,8 @@ void task2(long int size) {
 	omp_set_nested(1);
 	mergeSortParallelNested(srcArray, size, dstArray);
 	omp_set_nested(0);
-	std::cout << omp_get_wtime() - timer1 << std::endl;
+	std::cout << "Параллельная сортировка слияниями со вложенным параллелизмом" << std::endl;
+	std::cout << "Время: " << omp_get_wtime() - timer1 << "\n\n";
 }
 
 int quickPartition(int* array, int start, int end) {
@@ -210,10 +215,12 @@ void task3(long int size) {
 	randomArray(srcArray, size);
 	int* dstArray = new int[size];
 	copyArray(srcArray, dstArray, size);
+	std::cout << "Быстрая сортировка, количество элементов - " << size << std::endl;
 
 	auto timer1 = omp_get_wtime();
 	quickSortRegular(dstArray, 0, size - 1);
-	std::cout << omp_get_wtime() - timer1 << std::endl;
+	std::cout << "Обычная быстрая сортировка" << std::endl;
+	std::cout << "Время: " << omp_get_wtime() - timer1 << std::endl;
 
 	delete[] dstArray;
 	dstArray = new int[size];
@@ -221,7 +228,8 @@ void task3(long int size) {
 
 	timer1 = omp_get_wtime();
 	quickSortParallel(dstArray, 0, size - 1);
-	std::cout << omp_get_wtime() - timer1 << std::endl;
+	std::cout << "Параллельная быстрая сортировка без вложенного параллелизма" << std::endl;
+	std::cout << "Время: " << omp_get_wtime() - timer1 << std::endl;
 
 	delete[] dstArray;
 	dstArray = new int[size];
@@ -231,7 +239,8 @@ void task3(long int size) {
 	omp_set_nested(1);
 	quickSortParallelNested(dstArray, 0, size - 1);
 	omp_set_nested(0);
-	std::cout << omp_get_wtime() - timer1 << std::endl;
+	std::cout << "Параллельная быстрая сортировка со вложенным параллелизмом" << std::endl;
+	std::cout << "Время: " << omp_get_wtime() - timer1 << "\n\n";
 }
 
 #ifdef _OPENMP
