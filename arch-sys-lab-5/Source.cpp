@@ -125,31 +125,37 @@ void mergeSortRegular(int* srcArray, int n, int* dstArray) {
 	mergeFusion(srcArray, n, dstArray);
 }
 
-void task2(long int size) {
-	int* srcArray = new int[size];
-	randomArray(srcArray, size);
+void task2(int* srcArray, long int size) {
+	int* tmpArray = new int[size];
+	copyArray(srcArray, tmpArray, size);
 	int* dstArray = new int[size];
 	std::cout << "Сортировка слиянием, количество элементов - " << size << std::endl;
 
 	auto timer1 = omp_get_wtime();
-	mergeSortRegular(srcArray, size, dstArray);
+	mergeSortRegular(tmpArray, size, dstArray);
 	std::cout << "Обычная сортировка слияниями" << std::endl;
 	std::cout << "Время: " << omp_get_wtime() - timer1 << std::endl;
 
+	delete[] tmpArray;
 	delete[] dstArray;
 	dstArray = new int[size];
+	tmpArray = new int[size];
+	copyArray(srcArray, tmpArray, size);
 
 	timer1 = omp_get_wtime();
-	mergeSortParallel(srcArray, size, dstArray);
+	mergeSortParallel(tmpArray, size, dstArray);
 	std::cout << "Параллельная сортировка слияниями без вложенного параллелизма" << std::endl;
 	std::cout << "Время: " << omp_get_wtime() - timer1 << std::endl;
 
+	delete[] tmpArray;
 	delete[] dstArray;
 	dstArray = new int[size];
+	tmpArray = new int[size];
+	copyArray(srcArray, tmpArray, size);
 
 	timer1 = omp_get_wtime();
 	omp_set_nested(1);
-	mergeSortParallelNested(srcArray, size, dstArray);
+	mergeSortParallelNested(tmpArray, size, dstArray);
 	omp_set_nested(0);
 	std::cout << "Параллельная сортировка слияниями со вложенным параллелизмом" << std::endl;
 	std::cout << "Время: " << omp_get_wtime() - timer1 << "\n\n";
@@ -210,9 +216,7 @@ void quickSortParallelNested(int* array, int start, int end) {
 	quickSortParallelNested(array, supElem + 1, end);
 }
 
-void task3(long int size) {
-	int* srcArray = new int[size];
-	randomArray(srcArray, size);
+void task3(int* srcArray, long int size) {
 	int* dstArray = new int[size];
 	copyArray(srcArray, dstArray, size);
 	std::cout << "Быстрая сортировка, количество элементов - " << size << std::endl;
@@ -247,14 +251,19 @@ void task3(long int size) {
 int main() {
 	setlocale(LC_ALL, "");
 	srand(time(NULL));
+	long int size;
+	std::cout << "Введите количество элементов в массиве: ";
+	std::cin >> size;
+	int* srcArray = new int[size];
+	randomArray(srcArray, size);
 
 	std::vector<double> vec1;
 	randomVec(vec1, 10000);
 	std::vector<int> vec2;
 	randomVec(vec2, 10000);
 	task1(vec1, vec2);
-	task2(1000000);
-	task3(1000000);
+	task2(srcArray, size);
+	task3(srcArray, size);
 	return 1;
 }
 #endif
