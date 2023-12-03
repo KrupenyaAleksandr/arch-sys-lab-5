@@ -25,7 +25,7 @@ void task1(std::vector <T1> vec1, std::vector <T2> vec2) {
 			}
 		}
 	}
-	std::cout << "Сложение двух векторов, количество элементов - " << count << std::endl;
+	std::cout << "\nСложение двух векторов, количество элементов - " << count << std::endl;
 	std::cout << "Сумма: " << sum << ", время: " << omp_get_wtime() - timer1 << "\n\n";
 }
 
@@ -92,13 +92,22 @@ void mergeFusion(int* srcArray, int n, int* dstArray) {
 	memcpy(srcArray, dstArray, n * sizeof(int));
 }
 
-void mergeSortParallelNested(int* srcArray, int n, int* dstArray) {
-	if (n < 2)
-		return;
-	mergeSortParallelNested(srcArray, n / 2, dstArray);
-	mergeSortParallelNested(srcArray + (n / 2), n - (n / 2), dstArray + n / 2);
-	mergeFusion(srcArray, n, dstArray);
-}
+//void mergeSortParallelNested(int* srcArray, int n, int* dstArray) {
+//	if (n < 2)
+//		return;
+//	#pragma omp parallel sections num_threads(1)
+//	{
+//		#pragma omp section 
+//		{
+//			mergeSortParallelNested(srcArray, n / 2, dstArray);
+//		}
+//		#pragma omp section 
+//		{
+//			mergeSortParallelNested(srcArray + (n / 2), n - (n / 2), dstArray + n / 2);
+//		}
+//	}
+//	mergeFusion(srcArray, n, dstArray);
+//}
 
 void mergeSortParallel(int* srcArray, int n, int* dstArray) {
 	if (n < 2)
@@ -143,7 +152,10 @@ void task2(int* srcArray, long int size) {
 	copyArray(srcArray, tmpArray, size);
 
 	timer1 = omp_get_wtime();
-	mergeSortParallel(tmpArray, size, dstArray);
+	#pragma omp parallel
+	{
+		mergeSortParallel(tmpArray, size, dstArray);
+	}
 	std::cout << "Параллельная сортировка слияниями без вложенного параллелизма" << std::endl;
 	std::cout << "Время: " << omp_get_wtime() - timer1 << std::endl;
 
@@ -153,9 +165,13 @@ void task2(int* srcArray, long int size) {
 	tmpArray = new int[size];
 	copyArray(srcArray, tmpArray, size);
 
-	timer1 = omp_get_wtime();
 	omp_set_nested(1);
-	mergeSortParallelNested(tmpArray, size, dstArray);
+	omp_set_num_threads(1);
+	timer1 = omp_get_wtime();
+	#pragma omp parallel
+	{
+		mergeSortParallel(tmpArray, size, dstArray);
+	}
 	omp_set_nested(0);
 	std::cout << "Параллельная сортировка слияниями со вложенным параллелизмом" << std::endl;
 	std::cout << "Время: " << omp_get_wtime() - timer1 << "\n\n";
@@ -206,15 +222,24 @@ void quickSortParallel(int* array, int start, int end) {
 	}
 }
 
-void quickSortParallelNested(int* array, int start, int end) {
-	if (start >= end)
-		return;
-
-	int supElem = quickPartition(array, start, end);
-
-	quickSortParallelNested(array, start, supElem - 1);
-	quickSortParallelNested(array, supElem + 1, end);
-}
+//void quickSortParallelNested(int* array, int start, int end) {
+//	if (start >= end)
+//		return;
+//
+//	int supElem = quickPartition(array, start, end);
+//
+//#pragma omp parallel sections num_threads(1)
+//	{
+//#pragma omp section
+//		{
+//			quickSortParallelNested(array, start, supElem - 1);
+//		}
+//#pragma omp section
+//		{
+//			quickSortParallelNested(array, supElem + 1, end);
+//		}
+//	}
+//}
 
 void task3(int* srcArray, long int size) {
 	int* dstArray = new int[size];
@@ -231,7 +256,10 @@ void task3(int* srcArray, long int size) {
 	copyArray(srcArray, dstArray, size);
 
 	timer1 = omp_get_wtime();
-	quickSortParallel(dstArray, 0, size - 1);
+	#pragma omp parallel
+	{
+		quickSortParallel(dstArray, 0, size - 1);
+	}
 	std::cout << "Параллельная быстрая сортировка без вложенного параллелизма" << std::endl;
 	std::cout << "Время: " << omp_get_wtime() - timer1 << std::endl;
 
@@ -240,8 +268,12 @@ void task3(int* srcArray, long int size) {
 	copyArray(srcArray, dstArray, size);
 
 	timer1 = omp_get_wtime();
+	omp_set_num_threads(1);
 	omp_set_nested(1);
-	quickSortParallelNested(dstArray, 0, size - 1);
+	#pragma omp parallel
+	{
+		quickSortParallel(dstArray, 0, size - 1);
+	}
 	omp_set_nested(0);
 	std::cout << "Параллельная быстрая сортировка со вложенным параллелизмом" << std::endl;
 	std::cout << "Время: " << omp_get_wtime() - timer1 << "\n\n";
@@ -258,9 +290,9 @@ int main() {
 	randomArray(srcArray, size);
 
 	std::vector<double> vec1;
-	randomVec(vec1, 10000);
+	randomVec(vec1, 1000000);
 	std::vector<int> vec2;
-	randomVec(vec2, 10000);
+	randomVec(vec2, 1000000);
 	task1(vec1, vec2);
 	task2(srcArray, size);
 	task3(srcArray, size);
