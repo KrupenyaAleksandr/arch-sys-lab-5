@@ -9,20 +9,17 @@ void task1(std::vector <T1> vec1, std::vector <T2> vec2) {
 	double sum = 0;
 	int count = vec1.size();
 	auto timer1 = omp_get_wtime();
-	#pragma omp parallel
+	#pragma omp parallel sections
 	{
-		#pragma omp sections reduction(+:sum)
+		#pragma omp section
 		{
-			#pragma omp section
-			{
-				for (int i = 0; i < count / 2; ++i)
-					sum += vec1[i] + vec2[i];
-			}
-			#pragma omp section
-			{
-				for (int i = count / 2; i < count; ++i)
-					sum += vec1[i] + vec2[i];
-			}
+			for (int i = 0; i < count / 2; ++i)
+				sum += vec1[i] + vec2[i];
+		}
+		#pragma omp section
+		{
+			for (int i = count / 2; i < count; ++i)
+				sum += vec1[i] + vec2[i];
 		}
 	}
 	std::cout << "\nСложение двух векторов, количество элементов - " << count << std::endl;
@@ -92,36 +89,25 @@ void mergeFusion(int* srcArray, int n, int* dstArray) {
 	memcpy(srcArray, dstArray, n * sizeof(int));
 }
 
-//void mergeSortParallelNested(int* srcArray, int n, int* dstArray) {
-//	if (n < 2)
-//		return;
-//	#pragma omp parallel sections num_threads(1)
-//	{
-//		#pragma omp section 
-//		{
-//			mergeSortParallelNested(srcArray, n / 2, dstArray);
-//		}
-//		#pragma omp section 
-//		{
-//			mergeSortParallelNested(srcArray + (n / 2), n - (n / 2), dstArray + n / 2);
-//		}
-//	}
-//	mergeFusion(srcArray, n, dstArray);
-//}
-
-void mergeSortParallel(int* srcArray, int n, int* dstArray) {
+void mergeSortParallel(int* srcArray, int n, int* dstArray, int min_partition) {
 	if (n < 2)
 		return;
-	#pragma omp parallel sections
-	{
-		#pragma omp section
+	if (n > min_partition) {
+		#pragma omp parallel sections
 		{
-			mergeSortParallel(srcArray, n / 2, dstArray);
+			#pragma omp section
+			{
+				mergeSortParallel(srcArray, n / 2, dstArray, min_partition);
+			}
+			#pragma omp section
+			{
+				mergeSortParallel(srcArray + (n / 2), n - (n / 2), dstArray + n / 2, min_partition);
+			}
 		}
-		#pragma omp section
-		{
-			mergeSortParallel(srcArray + (n / 2), n - (n / 2), dstArray + n / 2);
-		}
+	}
+	else {
+		mergeSortParallel(srcArray, n / 2, dstArray, min_partition);
+		mergeSortParallel(srcArray + (n / 2), n - (n / 2), dstArray + n / 2, min_partition);
 	}
 	mergeFusion(srcArray, n, dstArray);
 }
@@ -151,11 +137,9 @@ void task2(int* srcArray, long int size) {
 	tmpArray = new int[size];
 	copyArray(srcArray, tmpArray, size);
 
+	omp_set_num_threads(2);
 	timer1 = omp_get_wtime();
-	#pragma omp parallel
-	{
-		mergeSortParallel(tmpArray, size, dstArray);
-	}
+	mergeSortParallel(tmpArray, size, dstArray, size * 5 / 100);
 	std::cout << "Параллельная сортировка слияниями без вложенного параллелизма" << std::endl;
 	std::cout << "Время: " << omp_get_wtime() - timer1 << std::endl;
 
@@ -166,15 +150,11 @@ void task2(int* srcArray, long int size) {
 	copyArray(srcArray, tmpArray, size);
 
 	omp_set_nested(1);
-	omp_set_num_threads(1);
 	timer1 = omp_get_wtime();
-	#pragma omp parallel
-	{
-		mergeSortParallel(tmpArray, size, dstArray);
-	}
-	omp_set_nested(0);
+	mergeSortParallel(tmpArray, size, dstArray, size * 5 / 100);
 	std::cout << "Параллельная сортировка слияниями со вложенным параллелизмом" << std::endl;
-	std::cout << "Время: " << omp_get_wtime() - timer1 << "\n\n";
+	std::cout << "Время: " << omp_get_wtime() - timer1 << "\n\n"; 
+	omp_set_nested(0);
 }
 
 int quickPartition(int* array, int start, int end) {
@@ -203,43 +183,30 @@ void quickSortRegular(int* array, int start, int end) {
 }
 
 
-void quickSortParallel(int* array, int start, int end) {
+void quickSortParallel(int* array, int start, int end, int min_partition) {
 	if (start >= end)
 		return;
 
 	int supElem = quickPartition(array, start, end);
 
-	#pragma omp parallel sections
-	{
-		#pragma omp section
+	if (end - start > min_partition) {
+		#pragma omp parallel sections
 		{
-			quickSortParallel(array, start, supElem - 1);
-		}
-		#pragma omp section
-		{
-			quickSortParallel(array, supElem + 1, end);
+			#pragma omp section
+			{
+				quickSortParallel(array, start, supElem - 1, min_partition);
+			}
+			#pragma omp section
+			{
+				quickSortParallel(array, supElem + 1, end, min_partition);
+			}
 		}
 	}
+	else {
+		quickSortParallel(array, start, supElem - 1, min_partition);
+		quickSortParallel(array, supElem + 1, end, min_partition);
+	}
 }
-
-//void quickSortParallelNested(int* array, int start, int end) {
-//	if (start >= end)
-//		return;
-//
-//	int supElem = quickPartition(array, start, end);
-//
-//#pragma omp parallel sections num_threads(1)
-//	{
-//#pragma omp section
-//		{
-//			quickSortParallelNested(array, start, supElem - 1);
-//		}
-//#pragma omp section
-//		{
-//			quickSortParallelNested(array, supElem + 1, end);
-//		}
-//	}
-//}
 
 void task3(int* srcArray, long int size) {
 	int* dstArray = new int[size];
@@ -255,11 +222,9 @@ void task3(int* srcArray, long int size) {
 	dstArray = new int[size];
 	copyArray(srcArray, dstArray, size);
 
+    omp_set_num_threads(2);
 	timer1 = omp_get_wtime();
-	#pragma omp parallel
-	{
-		quickSortParallel(dstArray, 0, size - 1);
-	}
+	quickSortParallel(dstArray, 0, size - 1, size * 5 / 100);
 	std::cout << "Параллельная быстрая сортировка без вложенного параллелизма" << std::endl;
 	std::cout << "Время: " << omp_get_wtime() - timer1 << std::endl;
 
@@ -267,16 +232,12 @@ void task3(int* srcArray, long int size) {
 	dstArray = new int[size];
 	copyArray(srcArray, dstArray, size);
 
-	timer1 = omp_get_wtime();
-	omp_set_num_threads(1);
 	omp_set_nested(1);
-	#pragma omp parallel
-	{
-		quickSortParallel(dstArray, 0, size - 1);
-	}
-	omp_set_nested(0);
-	std::cout << "Параллельная быстрая сортировка со вложенным параллелизмом" << std::endl;
+    timer1 = omp_get_wtime();
+	quickSortParallel(dstArray, 0, size - 1, size * 5 / 100);
+    std::cout << "Параллельная быстрая сортировка со вложенным параллелизмом" << std::endl;
 	std::cout << "Время: " << omp_get_wtime() - timer1 << "\n\n";
+	omp_set_nested(0);
 }
 
 #ifdef _OPENMP
